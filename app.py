@@ -1,3 +1,5 @@
+import io
+
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -8,8 +10,10 @@ from auth_server import start_server, open_browser, auth_code_holder
 import threading
 from geopy.geocoders import Nominatim
 
+# Initialize Spotify backend
 sb = SpotifyBackend()
 
+# Set page config
 st.set_page_config(page_title="Moodify", layout="wide", page_icon="favicon.ico")
 st.title("🎵 Moodify: Your Spotify Mood Tracker and Browser")
 
@@ -19,7 +23,7 @@ if "flask_started" not in st.session_state:
     flask_thread.start()
     st.session_state["flask_started"] = True
 
-# Color picker in the sidebar to change chart colors
+# Color picker for charts
 chart_color = st.sidebar.color_picker("Pick a color for your charts", "#1f77b4")  # Default to blue
 
 # Step 1: Generate and open Spotify auth URL with the correct scopes
@@ -58,42 +62,42 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
         "🔍 Artist Search",
         "📖 Artist Biographies",
     ])
-    with home_tab:
-        # Create a two-column layout for text and image
-        col1, col2 = st.columns([4, 1])  # Adjust the column ratio as per the layout
 
+    with home_tab:
+        # Home tab content
+        col1, col2 = st.columns([4, 1])  # Adjust the column ratio as per the layout
         with col1:
             st.header("Welcome to Moodify! 🎶")
             st.write("Moodify is a Spotify Mood Tracker that allows you to: ")
             st.markdown("""
-                                                - Track your **mood** and generate music playlists that match your emotional state. 😊🎶
-                                                - View your **top songs** over different time periods and explore music trends. 📊🎧
-                                                - **Search for your favorite artists** and check out their top tracks and popularity. 🔍🎤
-                                                - **Read artist biographies** to learn more about your favorite artists' backgrounds and journey in music. 📖🎤
-                                                - **Customize your charts** using the sidebar color picker! 🎨 Change the colors of the charts in the "Top Songs" and "Artist Search" tabs to match your style and preferences. 🌈
-                                            """)
+                - Track your **mood** and generate music playlists that match your emotional state. 😊🎶
+                - View your **top songs** over different time periods and explore music trends. 📊🎧
+                - **Search for your favorite artists** and check out their top tracks and popularity. 🔍🎤
+                - **Read artist biographies** to learn more about your favorite artists' backgrounds and journey in music. 📖🎤
+                - **Customize your charts** using the sidebar color picker! 🎨 Change the colors of the charts in the "Top Songs" and "Artist Search" tabs to match your style and preferences. 🌈
+            """)
 
             st.write("How does it work? 🤔")
             st.markdown("""
-                                        - **Step 1**: Log in with Spotify and grant access to your account. 🔑
-                                        - **Step 2**: Use the mood slider to set your emotional state and get a playlist recommendation. 🎚️🎶
-                                        - **Step 3**: Explore your top songs, based on the time period you choose (short-term, medium-term, long-term). 📅🎵
-                                        - **Step 4**: Search for any artist and see their top tracks, popularity, and followers! 🎤👀
-                                        - **Step 5**: Want to know more about the artist? Check out their **biography** to get insights into their musical journey, background, and accomplishments! 📖🎶
-                                    """)
+                - **Step 1**: Log in with Spotify and grant access to your account. 🔑
+                - **Step 2**: Use the mood slider to set your emotional state and get a playlist recommendation. 🎚️🎶
+                - **Step 3**: Explore your top songs, based on the time period you choose (short-term, medium-term, long-term). 📅🎵
+                - **Step 4**: Search for any artist and see their top tracks, popularity, and followers! 🎤👀
+                - **Step 5**: Want to know more about the artist? Check out their **biography** to get insights into their musical journey, background, and accomplishments! 📖🎶
+            """)
 
             st.subheader("🎨 **Moodify's Vision:**")
             st.markdown("""
-                    <div style="background-color: #f0f0f5; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin: 0 auto; width: 80%; ">
-                        <strong>Vision of Moodify:</strong><br>
-                        <em>"Moodify is here to enhance your listening experience, offering tailored playlists based on your emotional state. Whether you're feeling happy, sad, or somewhere in between, we aim to create the perfect soundtrack for your mood!"</em>
-                    </div>
-                    """, unsafe_allow_html=True)
+                <div style="background-color: #f0f0f5; padding: 20px; border-radius: 10px; text-align: center; font-size: 18px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); margin: 0 auto; width: 80%; ">
+                    <strong>Vision of Moodify:</strong><br>
+                    <em>"Moodify is here to enhance your listening experience, offering tailored playlists based on your emotional state. Whether you're feeling happy, sad, or somewhere in between, we aim to create the perfect soundtrack for your mood!"</em>
+                </div>
+            """, unsafe_allow_html=True)
 
         with col2:
-            # Align image with the header in the second column
             st.image("C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\music_background.jpg", width=600)
 
+    # Mood Playlist Tab
     with mood_playlist_tab:
         st.header("🎧 Mood-based Playlist Recommendation 🎶")
 
@@ -102,18 +106,20 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
             - 🎵 Get **mood-based** song recommendations
             - 📝 **Name** and **create** a playlist in your Spotify
             - 📥 **Download** song info as a **CSV** file
+            - 🔄 **Refresh** your playlist to get a new set of mood-based recommendations without changing your current settings!
         """)
 
-        st.write("How are you feeling today? Please use the slider below to reflect your mood. 😌")
-
         # Mood slider with emojis and a legend
-        mood = st.slider("How are you feeling today?", 0, 10, 5,
-                         format="%d", help="0 = 😢 very sad, 5 = 🙂 neutral, 10 = 😄 very happy")
+        mood = st.slider("How are you feeling today?", 0, 10, 5, format="%d",
+                         help="0 = 😢 very sad, 5 = 🙂 neutral, 10 = 😄 very happy")
         st.write(f"Mood: {mood} - {['😢', '😔', '😟', '😐', '🙂', '😊', '😄'][mood // 2]}")
+        st.info("Please use the slider above to reflect your mood. 😌")
 
         # Track limit input - User selects how many tracks they want (number input)
         track_limit = st.number_input("How many tracks would you like in your playlist?", min_value=1, max_value=50,
                                       value=5, step=1, help="Choose the number of tracks (maximum 50).")
+
+        st.info("Please input a valid number between 1 and 50.")
 
         # Output the selected number of tracks
         st.write(f"Tracks in Playlist: {track_limit}")
@@ -123,22 +129,57 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
         # Input for playlist name
         playlist_name = st.text_input("Enter a name for your playlist", f"Moodify Playlist - {mood}")
+        st.info("Please input a valid name for the playlist before generating.")
 
-        # Create the playlist button
+        st.write("### Actions")
+
+        # Create playlist button
         create_playlist_button = st.button("Create Playlist and Add Tracks")
+
+        # Prepare track data for CSV download
+        track_data = [{
+            'Track Name': track['name'],
+            'Artist': track['artist'],
+            'Genre': track['genre_seed'].capitalize(),
+            'Spotify URL': track['spotify_url'],
+            'Cover Image': track['cover']
+        } for track in recommended_tracks[:track_limit]]  # Ensure only the selected number of tracks
+
+        # Convert to DataFrame
+        df = pd.DataFrame(track_data)
+
+        # Convert DataFrame to CSV (ensure correct encoding)
+        csv = df.to_csv(index=False)
+
+        # Convert the CSV to a downloadable object in memory
+        csv_bytes = io.BytesIO()
+        csv_bytes.write(csv.encode())
+        csv_bytes.seek(0)
+
+        # Display the "Download Playlist as CSV" button first (above the music)
+        st.download_button(
+            label="Download Playlist as CSV",
+            data=csv_bytes,
+            file_name="mood_playlist.csv",
+            mime="text/csv",
+            key=f"download_{mood}"  # Adding a unique key based on the mood
+        )
+
+        # Refresh button
+        refresh_button = st.button("Refresh Playlist")
 
         if recommended_tracks:
             # Display the tracks in a grid format
             st.subheader("Your Personalized Playlist 🎶")
 
+            # Show the music tracks after the download button
             if create_playlist_button:
                 # Create a new playlist with custom or default name
                 user_id = sb.sp.current_user()['id']  # Get the current user's ID
                 playlist_id = sb.create_playlist(user_id, playlist_name)  # Create playlist with user-defined name
                 if playlist_id:
-                    # Add the tracks to the playlist, respecting the track limit
                     try:
-                        sb.add_tracks_to_playlist(playlist_id, track_uris, track_limit)  # Pass track_limit here
+                        sb.add_tracks_to_playlist(playlist_id, track_uris, track_limit)
                         st.success(
                             f"✅ Playlist '{playlist_name}' created and {len(track_uris[:track_limit])} tracks added!")
                     except Exception as e:
@@ -158,6 +199,13 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
                     st.write(f"Genre: {track['genre_seed'].capitalize()}")
                     st.markdown(f"[Listen on Spotify]({track['spotify_url']})")
 
+            # Refresh playlist
+            if refresh_button:
+                recommended_tracks, track_uris = sb.get_random_tracks_by_genre(mood, num_tracks=track_limit)
+                st.session_state.recommended_tracks = recommended_tracks
+                st.session_state.track_uris = track_uris
+                st.success("Playlist refreshed with new recommendations!")
+
         else:
             st.error("Could not generate a playlist. Please try again later.")
 
@@ -171,6 +219,7 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
             - Explore your **popularity trends** with interactive charts. 📊
             - See which tracks are currently ruling your Spotify account! 🌟🎶
             - **Filter by time period** (short-term, medium-term, long-term) and track your listening journey over time! 🎶
+            - **Save your top tracks** as a CSV file for easy access, tracking, and sharing!📥
         """)
         st.write("There are three time intervals you can choose from:")
         st.markdown("""        
@@ -181,9 +230,8 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
         interval = st.selectbox("Select Time Interval", ["None", "short_term", "medium_term", "long_term"])
 
-        if interval == "None":
-            st.info("Please select a time period to see your top songs.")
-        else:
+        # Check if the interval is not 'None'
+        if interval != "None":
             top_tracks, error_message = sb.get_top_tracks_by_timeframe(interval)
 
             if isinstance(top_tracks, pd.DataFrame):
@@ -192,6 +240,35 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
                 # Add Track # column
                 top_tracks_sorted.insert(0, "Track No.", range(1, len(top_tracks_sorted) + 1))
+
+                # Prepare track data for CSV download (after sorting the top tracks)
+                track_data = [{
+                    'Track No.': row['Track No.'],
+                    'Track Name': row['Track'],
+                    'Artist': row['Artist'],
+                    'Popularity': row['Popularity'],
+                    'Spotify Link': row['Spotify Link']
+                } for _, row in top_tracks_sorted.iterrows()]  # Convert rows to a list of dicts
+
+                # Convert to DataFrame
+                df = pd.DataFrame(track_data)
+
+                # Convert DataFrame to CSV (ensure correct encoding)
+                csv = df.to_csv(index=False)
+
+                # Convert the CSV to a downloadable object in memory
+                csv_bytes = io.BytesIO()
+                csv_bytes.write(csv.encode())
+                csv_bytes.seek(0)
+
+                # Display the "Download Top Tracks as CSV" button right after the select box
+                st.download_button(
+                    label="Download Top Tracks as CSV",
+                    data=csv_bytes,
+                    file_name=f"top_tracks_{interval}.csv",
+                    mime="text/csv",
+                    key=f"download_top_tracks_{interval}"  # Adding a unique key based on the interval
+                )
 
                 # Show dataframe
                 st.subheader(f"🎶 Top Tracks ({interval.replace('_', ' ').title()})")
@@ -213,12 +290,16 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
             else:
                 st.error(error_message or "Something went wrong retrieving top tracks.")
+        else:
+            st.info("Please select a time period to see your top songs.")
 
-    # Initialize the artists_data in session state if it doesn't exist
-    if "artists_data" not in st.session_state:
-        st.session_state.artists_data = []
-
+    # Artist Search Tab
     with artist_search_tab:
+
+        # Initialize the artists_data in session state if it doesn't exist
+        if "artists_data" not in st.session_state:
+            st.session_state.artists_data = []
+
         st.header("🔍 Search for an Artist 🎤")
         st.info("""
                     **🔍 Find Your Favorite Artists 🎤**
@@ -230,6 +311,9 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
                     - Keep track of your **favorite artists** and compare them to others with interactive charts! 📈
                 """)
         artist_name = st.text_input("Enter artist name ✨")
+
+        if artist_name == "":
+            st.info("Please input an artist name. 🎵")
 
         if st.button("Search 🔍") and artist_name:
             # Search for the artist and retrieve top tracks and followers
