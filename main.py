@@ -1,6 +1,5 @@
 import random
 import time
-
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import pandas as pd
@@ -124,16 +123,27 @@ class SpotifyBackend:
 
         try:
             recommended_tracks = []
+            seen_tracks = set()  # Set to track unique songs by their Spotify URL
 
             # Try to fetch tracks for each genre seed
             for genre in genre_seeds:
                 search_query = f"genre:{genre}"
-                search_results = self.sp.search(q=search_query, type='track', limit=10)  # Fetch 10 tracks max
+                search_results = self.sp.search(q=search_query, type='track',
+                                                limit=50)  # Fetch more tracks for better randomness
 
                 if search_results and "tracks" in search_results and len(search_results["tracks"]["items"]) > 0:
                     # Pick `num_tracks` random tracks from the search results
                     tracks = search_results["tracks"]["items"]
-                    random_tracks = random.sample(tracks, min(num_tracks, len(tracks)))
+
+                    # Filter out any tracks we've already seen (to avoid duplicates)
+                    new_tracks = [track for track in tracks if track['external_urls']['spotify'] not in seen_tracks]
+
+                    # Add these new tracks to the list of seen tracks
+                    for track in new_tracks:
+                        seen_tracks.add(track['external_urls']['spotify'])
+
+                    # Randomly select tracks from the new list (if there are enough new tracks)
+                    random_tracks = random.sample(new_tracks, min(num_tracks, len(new_tracks)))
 
                     for track in random_tracks:
                         track_data = {
@@ -156,7 +166,6 @@ class SpotifyBackend:
         except Exception as e:
             print(f"Error while fetching tracks: {e}")
             return None, None  # Return None in case of error
-
 
     # Method to get recommendations from mood (valence and energy)
     def get_single_recommendation_by_mood(self, mood):
