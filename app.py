@@ -432,7 +432,7 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
         artist_images = {
             "Adele": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\adele.jpg",
             "Olivia Rodrigo": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\olivia-rodrigo.jpg",
-            "Billie Eilish": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\billie-eilish.pjpeg",
+            "Billie Eilish": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\billie-eilish.jpg",
             "The Weeknd": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\the-weeknd.jpg",
             "Lady Gaga": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\lady-gaga.jpg"
         }
@@ -448,15 +448,21 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
         if selected_artist == "Select an Artist":
             st.info("Please select an artist from the dropdown to see their information. 🎤✨")
         else:
-            # Function to load Last.fm API key from the .toml file
+            def load_secrets():
+                if st.secrets:
+                    return st.secrets
+                else:
+                    return toml.load("secrets.toml")
+
+
             def load_lastfm_api_key():
-                config = toml.load("config.toml")
-                api_key = config["lastfm"]["api_key"]
-                return api_key
+                secrets = load_secrets()
+                return secrets["lastfm"]["api_key"]
+
 
             # Function to get artist information
             def get_artist_info(artist_name):
-                API_KEY = load_lastfm_api_key()  # Load the API key from the .toml file
+                API_KEY = load_lastfm_api_key()  # Load the API key securely
                 url = f"http://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist={artist_name}&api_key={API_KEY}&format=json"
                 response = requests.get(url)
                 data = response.json()
@@ -469,6 +475,7 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
                     image_url = artist_info['image'][2]['#text'] if 'image' in artist_info and len(
                         artist_info['image']) > 2 else None
                     return biography, location, image_url
+
                 return None, None, None
 
 
