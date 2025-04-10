@@ -25,7 +25,7 @@ class SpotifyBackend:
         if st.get_option("server.headless"):  # For Streamlit Cloud
             self.redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
         else:  # For local development
-            self.redirect_uri = "http://localhost:8501/callback"
+            self.redirect_uri = "http://localhost:8080/callback"
 
         self.oauth = None  # Ensure oauth is initialized
 
