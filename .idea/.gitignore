@@ -2,4 +2,4 @@
 /shelf/
 /workspace.xml
 
-config.toml
+.streamlit/secrets.toml
