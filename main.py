@@ -4,13 +4,17 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import pandas as pd
 import toml
+import streamlit as st
 
-# Load configuration
-secrets = toml.load("config.toml")
-
+def load_secrets():
+    if st.secrets:
+        return st.secrets
+    else:
+        return toml.load("secrets.toml")
 
 class SpotifyBackend:
     def __init__(self):
+        secrets = load_secrets()
         self.sp = None
         self.client_id = secrets["SPOTIFY"]["CLIENT_ID"]
         self.client_secret = secrets["SPOTIFY"]["CLIENT_SECRET"]
