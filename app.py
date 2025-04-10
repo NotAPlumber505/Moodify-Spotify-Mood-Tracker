@@ -22,11 +22,12 @@ sb = SpotifyBackend()
 st.set_page_config(page_title="Moodify", layout="wide", page_icon="favicon.ico")
 st.title("🎵 Moodify: Your Spotify Mood Tracker and Browser")
 
-# Start the Flask server in the background
-if "flask_started" not in st.session_state:
-    flask_thread = threading.Thread(target=start_server, daemon=True)
-    flask_thread.start()
-    st.session_state["flask_started"] = True
+# # Start the Flask server in the background
+# Removed for deployment
+# if "flask_started" not in st.session_state:
+#     flask_thread = threading.Thread(target=start_server, daemon=True)
+#     flask_thread.start()
+#     st.session_state["flask_started"] = True
 
 # Color picker for charts
 chart_color = st.sidebar.color_picker("Pick a color for your charts", "#1f77b4")  # Default to blue
