@@ -13,7 +13,7 @@ from geopy.geocoders import Nominatim
 if st.get_option("server.headless"):  # For Streamlit Cloud
     redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
 else:  # For local development
-    redirect_uri = "http://localhost:8501/callback"
+    redirect_uri = "http://localhost:8080/callback"
 
 # Initialize Spotify backend
 sb = SpotifyBackend()
