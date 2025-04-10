@@ -101,8 +101,9 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
                 </div>
             """, unsafe_allow_html=True)
 
+        # Update for the background image in col2
         with col2:
-            st.image("C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\music_background.jpg", width=600)
+            st.image("assets/music_background.jpg", width=600)
 
     # Mood Playlist Tab
     with mood_playlist_tab:
