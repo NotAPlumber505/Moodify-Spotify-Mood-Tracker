@@ -6,11 +6,13 @@ import pandas as pd
 import toml
 import streamlit as st
 
+
 def load_secrets():
     if "st" in globals() and st.secrets:  # Check if running on Streamlit Cloud
         return st.secrets
     else:
         return toml.load("secrets.toml")  # Use secrets.toml for local development
+
 
 class SpotifyBackend:
     def __init__(self):
@@ -18,7 +20,13 @@ class SpotifyBackend:
         self.sp = None
         self.client_id = secrets["SPOTIFY"]["CLIENT_ID"]
         self.client_secret = secrets["SPOTIFY"]["CLIENT_SECRET"]
-        self.redirect_uri = secrets["SPOTIFY"]["REDIRECT_URI"]
+
+        # Update redirect URI based on environment
+        if st.get_option("server.headless"):  # For Streamlit Cloud
+            self.redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
+        else:  # For local development
+            self.redirect_uri = "http://localhost:8501/callback"
+
         self.oauth = None  # Ensure oauth is initialized
 
     def ensure_token(self):
