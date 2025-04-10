@@ -1,3 +1,4 @@
-# created by virtualenv automatically
-.streamlit/secrets.toml
+# Ignore Streamlit secrets
+.streamlit/
+
 

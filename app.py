@@ -449,10 +449,10 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
             st.info("Please select an artist from the dropdown to see their information. 🎤✨")
         else:
             def load_secrets():
-                if st.secrets:
+                if "st" in globals() and st.secrets:  # Check if running on Streamlit Cloud
                     return st.secrets
                 else:
-                    return toml.load("secrets.toml")
+                    return toml.load("secrets.toml")  # Use secrets.toml for local development
 
 
             def load_lastfm_api_key():

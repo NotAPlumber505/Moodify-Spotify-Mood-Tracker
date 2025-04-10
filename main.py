@@ -7,10 +7,10 @@ import toml
 import streamlit as st
 
 def load_secrets():
-    if st.secrets:
+    if "st" in globals() and st.secrets:  # Check if running on Streamlit Cloud
         return st.secrets
     else:
-        return toml.load("secrets.toml")
+        return toml.load("secrets.toml")  # Use secrets.toml for local development
 
 class SpotifyBackend:
     def __init__(self):
