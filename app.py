@@ -10,6 +10,12 @@ from auth_server import start_server, open_browser, auth_code_holder
 import threading
 from geopy.geocoders import Nominatim
 
+# Set the redirect URI depending on the environment (Streamlit Cloud vs local)
+if st.get_option("server.headless"):  # For Streamlit Cloud
+    redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
+else:  # For local development
+    redirect_uri = "http://localhost:8501/callback"
+
 # Initialize Spotify backend
 sb = SpotifyBackend()
 
