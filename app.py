@@ -1,5 +1,4 @@
 import io
-
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -38,9 +37,14 @@ if "token_exchanged" not in st.session_state or not st.session_state["token_exch
         # Include 'user-top-read' scope for top track access
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes)
-        open_browser(auth_url)
-        st.info("A new tab has opened. Please authorize the app and return here. 🌐")
-        st.info("When you finish authentication, please refresh the page. ♺")
+
+        if st.get_option("server.headless"):  # Streamlit Cloud (can't open browser tabs)
+            st.markdown(f"Please visit the following URL to authorize the app: [{auth_url}]({auth_url})")
+            st.info("After authorizing, return here and refresh the page. ♺")
+        else:  # Local development (open browser tab)
+            open_browser(auth_url)
+            st.info("A new tab has opened. Please authorize the app and return here. 🌐")
+            st.info("When you finish authentication, please refresh the page. ♺")
 
 # Step 2: Poll for the code from the Flask server and exchange it for a token
 if auth_code_holder["code"] and "token_exchanged" not in st.session_state:
@@ -61,6 +65,7 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
     # Hide the login button once the user is logged in
     st.session_state["token_exchanged"] = True
+
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
         "🏠 Home",
         "🎧 Mood Playlist",
