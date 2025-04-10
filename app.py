@@ -5,7 +5,6 @@ import pandas as pd
 import requests
 import toml
 from main import SpotifyBackend
-from auth_server import start_server, open_browser, auth_code_holder
 import threading
 from geopy.geocoders import Nominatim
 
@@ -22,13 +21,6 @@ sb = SpotifyBackend()
 st.set_page_config(page_title="Moodify", layout="wide", page_icon="favicon.ico")
 st.title("🎵 Moodify: Your Spotify Mood Tracker and Browser")
 
-# # Start the Flask server in the background
-# Removed for deployment
-# if "flask_started" not in st.session_state:
-#     flask_thread = threading.Thread(target=start_server, daemon=True)
-#     flask_thread.start()
-#     st.session_state["flask_started"] = True
-
 # Color picker for charts
 chart_color = st.sidebar.color_picker("Pick a color for your charts", "#1f77b4")  # Default to blue
 
@@ -43,15 +35,16 @@ if "token_exchanged" not in st.session_state or not st.session_state["token_exch
             st.markdown(f"Please visit the following URL to authorize the app: [{auth_url}]({auth_url})")
             st.info("After authorizing, return here and refresh the page. ♺")
         else:  # Local development (open browser tab)
-            open_browser(auth_url)
+            st.markdown(f"[Click here to log in with Spotify]({auth_url})")
             st.info("A new tab has opened. Please authorize the app and return here. 🌐")
             st.info("When you finish authentication, please refresh the page. ♺")
 
-# Step 2: Poll for the code from the Flask server and exchange it for a token
-if auth_code_holder["code"] and "token_exchanged" not in st.session_state:
-    print(f"Received auth code: {auth_code_holder['code']}")
+# Step 2: Poll for the code and exchange it for a token directly in Streamlit
+auth_code = st.experimental_get_query_params().get("code", None)
+
+if auth_code and "token_exchanged" not in st.session_state:
     # Exchange the authorization code for the access token
-    token_info = sb.exchange_code_for_token(auth_code_holder["code"])
+    token_info = sb.exchange_code_for_token(auth_code[0])
 
     # Check if the token exchange was successful and update session state
     if token_info:
