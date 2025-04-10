@@ -8,6 +8,7 @@ import streamlit as st
 
 
 def load_secrets():
+    """Load secrets from Streamlit secrets or a local toml file."""
     if "st" in globals() and st.secrets:  # Check if running on Streamlit Cloud
         return st.secrets
     else:
@@ -15,19 +16,17 @@ def load_secrets():
 
 
 class SpotifyBackend:
-    def __init__(self):
+    def __init__(self, redirect_uri=None):
+        # Load secrets from Streamlit secrets or local file
         secrets = load_secrets()
+
         self.sp = None
         self.client_id = secrets["SPOTIFY"]["CLIENT_ID"]
         self.client_secret = secrets["SPOTIFY"]["CLIENT_SECRET"]
 
-        # Update redirect URI based on environment
-        if st.get_option("server.headless"):  # For Streamlit Cloud
-            self.redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
-        else:  # For local development
-            self.redirect_uri = "http://localhost:8080/callback"
-
-        self.oauth = None  # Ensure oauth is initialized
+        # If a redirect_uri is passed, use it; otherwise, use the default one from secrets
+        self.redirect_uri = redirect_uri or secrets["SPOTIFY"]["REDIRECT_URI"]
+        self.oauth = None  # Ensure OAuth is initialized
 
     def ensure_token(self):
         """Ensure that a valid access token is available."""
@@ -63,11 +62,13 @@ class SpotifyBackend:
         return auth_url
 
     def get_auth_url(self, scopes):
+        """Generate Spotify authorization URL with the given scopes."""
         scopes += " user-top-read"
         self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri, scope=scopes)
         return self.oauth.get_authorize_url()
 
     def exchange_code_for_token(self, code):
+        """Exchange the authorization code for an access token."""
         self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri)
         token_info = self.oauth.get_access_token(code)
 

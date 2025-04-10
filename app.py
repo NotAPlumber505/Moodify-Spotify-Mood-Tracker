@@ -14,8 +14,8 @@ if st.get_option("server.headless"):  # For Streamlit Cloud
 else:  # For local development
     redirect_uri = "http://localhost:8080/callback"
 
-# Initialize Spotify backend
-sb = SpotifyBackend()
+# Initialize Spotify backend with dynamic redirect_uri
+sb = SpotifyBackend(redirect_uri=redirect_uri)
 
 # Set page config
 st.set_page_config(page_title="Moodify", layout="wide", page_icon="favicon.ico")
@@ -40,11 +40,11 @@ if "token_exchanged" not in st.session_state or not st.session_state["token_exch
             st.info("When you finish authentication, please refresh the page. ♺")
 
 # Step 2: Poll for the code and exchange it for a token directly in Streamlit
-auth_code = st.query_params().get("code", None)
+auth_code = st.query_params.get("code", None)
 
 if auth_code and "token_exchanged" not in st.session_state:
     # Exchange the authorization code for the access token
-    token_info = sb.exchange_code_for_token(auth_code[0])
+    token_info = sb.exchange_code_for_token(auth_code)
 
     # Check if the token exchange was successful and update session state
     if token_info:
@@ -59,6 +59,8 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
     # Hide the login button once the user is logged in
     st.session_state["token_exchanged"] = True
+
+
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
         "🏠 Home",
