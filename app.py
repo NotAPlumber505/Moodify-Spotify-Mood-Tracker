@@ -435,13 +435,13 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
             {"artist": "Lady Gaga", "genre": "Pop", "lat": 40.7447, "lon": -73.9947}  # New York City
         ]
 
-        # Manually input artist images (URL or local file paths)
+        # Manually input artist images with relative paths
         artist_images = {
-            "Adele": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\adele.jpg",
-            "Olivia Rodrigo": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\olivia-rodrigo.jpg",
-            "Billie Eilish": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\billie-eilish.jpg",
-            "The Weeknd": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\the-weeknd.jpg",
-            "Lady Gaga": "C:\\Users\\Owner\\PycharmProjects\\Song_Browser_Project2HCI\\lady-gaga.jpg"
+            "Adele": "assets/adele.jpg",
+            "Olivia Rodrigo": "assets/olivia-rodrigo.jpg",
+            "Billie Eilish": "assets/billie-eilish.jpg",
+            "The Weeknd": "assets/the-weeknd.jpg",
+            "Lady Gaga": "assets/lady-gaga.jpg"
         }
 
         # Convert data into pandas DataFrame for use with st.map
