@@ -11,8 +11,8 @@ def callback():
     return "<h1>You can close this tab and return to the Streamlit app ✅</h1>"
 
 def start_server():
-    # Run Flask server without specifying a port, allowing it to run on an available port
-    app.run(debug=True, use_reloader=False)  # `use_reloader=False` ensures it runs only once
+    # Run Flask server on a different port (5001 or any available port)
+    app.run(debug=True, use_reloader=False, port=5001)
 
 def open_browser(url):
     # If running locally, open the URL in the browser
