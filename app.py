@@ -40,7 +40,7 @@ if "token_exchanged" not in st.session_state or not st.session_state["token_exch
             st.info("When you finish authentication, please refresh the page. ♺")
 
 # Step 2: Poll for the code and exchange it for a token directly in Streamlit
-auth_code = st.experimental_get_query_params().get("code", None)
+auth_code = st.query_params().get("code", None)
 
 if auth_code and "token_exchanged" not in st.session_state:
     # Exchange the authorization code for the access token
