@@ -77,6 +77,12 @@ class SpotifyBackend:
             return token_info
         return None
 
+    def get_current_user(self):
+        """Get the current user's Spotify profile."""
+        if self.ensure_token():
+            return self.sp.current_user()
+        return None
+
     def create_playlist(self, user_id, name, description="Mood-based playlist"):
         """Create a new playlist for the user."""
         try:

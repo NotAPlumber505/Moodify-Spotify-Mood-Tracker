@@ -5,7 +5,6 @@ import pandas as pd
 import requests
 import toml
 from main import SpotifyBackend
-import threading
 from geopy.geocoders import Nominatim
 
 print("✅ App is starting up")
@@ -62,6 +61,10 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
     # Hide the login button once the user is logged in
     st.session_state["token_exchanged"] = True
 
+    # Fetch and display the current user’s name
+    user_profile = sb.get_current_user()
+    if user_profile:
+        st.write(f"🎧 Logged in as: {user_profile['display_name']}")
 
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
