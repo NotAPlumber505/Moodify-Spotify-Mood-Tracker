@@ -7,90 +7,53 @@ import toml
 from main import SpotifyBackend
 from geopy.geocoders import Nominatim
 
+# 👋 App startup
 print("✅ App is starting up")
 
-# Set the redirect URI depending on the environment (Streamlit Cloud vs local)
-if st.get_option("server.headless"):  # For Streamlit Cloud
+# 📍 Environment-specific redirect URI
+if st.get_option("server.headless"):  # Streamlit Cloud
     redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
-else:  # For local development
+else:  # Local dev
     redirect_uri = "http://localhost:8080/callback"
 
-# Initialize Spotify backend with dynamic redirect_uri
+# 🎧 Spotify auth setup
 sb = SpotifyBackend(redirect_uri=redirect_uri)
 
-# Set page config
+# 🖼️ App UI
 st.set_page_config(page_title="Moodify", layout="wide", page_icon="favicon.ico")
 st.title("🎵 Moodify: Your Spotify Mood Tracker and Browser")
 
-# Color picker for charts
-chart_color = st.sidebar.color_picker("Pick a color for your charts", "#1f77b4")  # Default to blue
+# 🔓 Logout logic
+if st.session_state.get("token_exchanged", False):
+    st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
+    if st.button("🔓 Logout"):
+        st.session_state.clear()
+        st.rerun()
 
-# Step 1: Generate and open Spotify auth URL with the correct scopes
-if "token_exchanged" not in st.session_state or not st.session_state["token_exchanged"]:
-    if st.button("🔐 Login with Spotify"):
-        # Include 'user-top-read' scope for top track access
-        scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
-        auth_url = sb.get_auth_url(scopes)
+# 🔐 Login logic
+elif st.button("🔐 Login with Spotify"):
+    scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
+    auth_url = sb.get_auth_url(scopes)
 
-        # Clear any existing session state for new user login
-        if "user_profile" in st.session_state:
-            del st.session_state["user_profile"]
+    # Redirect logic
+    if st.get_option("server.headless"):
+        st.markdown(f"Please visit the following URL to authorize: [{auth_url}]({auth_url})")
+        st.info("After authorizing, return and refresh the page.")
+    else:
+        st.markdown(f"[Click here to log in with Spotify]({auth_url})")
+        st.info("A new tab has opened. Authorize, then come back and refresh.")
 
-        if "user_profile_displayed" in st.session_state:
-            del st.session_state["user_profile_displayed"]
+# 🔄 Handle redirect from Spotify
+auth_code = st.query_params.get("code")
 
-        # Redirect the user to the Spotify authentication page
-        if st.get_option("server.headless"):  # Streamlit Cloud (can't open browser tabs)
-            st.markdown(f"Please visit the following URL to authorize the app: [{auth_url}]({auth_url})")
-            st.info("After authorizing, return here and refresh the page. ♺")
-        else:  # Local development (open browser tab)
-            st.markdown(f"[Click here to log in with Spotify]({auth_url})")
-            st.info("A new tab has opened. Please authorize the app and return here. 🌐")
-            st.info("When you finish authentication, please refresh the page. ♺")
-
-# Step 2: Poll for the code and exchange it for a token directly in Streamlit
-auth_code = st.query_params.get("code", None)
-
-if auth_code and "token_exchanged" not in st.session_state:
-    # Exchange the authorization code for the access token
+if auth_code and not st.session_state.get("token_exchanged"):
     token_info = sb.exchange_code_for_token(auth_code)
-
-    # Check if the token exchange was successful and update session state
     if token_info:
         st.session_state["token_exchanged"] = True
-        st.success("✅ Authorized with Spotify! Now you can track your mood and songs.")
-
-        # Fetch the user profile after successful login and store it in session state
-        user_profile = sb.get_current_user()
-        if user_profile:
-            st.session_state["user_profile"] = user_profile
-            # Only display user profile once after successful login
-            st.write(f"🎧 Logged in as: {user_profile['display_name']}")
+        st.session_state["user_profile"] = sb.get_current_user()
+        st.rerun()
     else:
-        st.error("❌ Failed to exchange code for token. Please try again.")
-
-# Step 3: Check session state for token and display tabs
-if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]:
-    print("User is logged in. Displaying tabs...")
-
-    # Display user profile if available, only once
-    if "user_profile" in st.session_state:
-        user_profile = st.session_state["user_profile"]
-        if "user_profile_displayed" not in st.session_state:  # Prevent double display
-            st.session_state["user_profile_displayed"] = True
-            st.write(f"🎧 Logged in as: {user_profile['display_name']}")
-
-    # Logout button logic
-    if st.button("🔓 Logout"):
-        # Clear all session state
-        st.session_state.clear()
-
-        # Display message after logout
-        st.success("You have been logged out. Please log in again.")
-
-        # Refresh the app (force a rerun)
-        st.rerun()  # This refreshes the app and clears session state
-
+        st.error("❌ Token exchange failed. Please try again.")
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
         "🏠 Home",
@@ -99,6 +62,8 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
         "🔍 Artist Search",
         "📖 Artist Biographies",
     ])
+    # Color picker for charts
+    chart_color = st.sidebar.color_picker("Pick a color for your charts", "#1f77b4")  # Default to blue
 
     with home_tab:
         # Home tab content
@@ -134,6 +99,7 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
         # Update for the background image in col2
         with col2:
             st.image("assets/music_background.jpg", width=600)
+
 
     # Mood Playlist Tab
     with mood_playlist_tab:
