@@ -7,45 +7,24 @@ import toml
 from main import SpotifyBackend
 from geopy.geocoders import Nominatim
 
-# 👋 App startup
-print("✅ App is starting up")
-
-# 📍 Environment-specific redirect URI
-if st.get_option("server.headless"):  # Streamlit Cloud
+# Setup redirect URI
+if st.get_option("server.headless"):
     redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
-else:  # Local dev
+else:
     redirect_uri = "http://localhost:8080/callback"
 
-# 🎧 Spotify auth setup
 sb = SpotifyBackend(redirect_uri=redirect_uri)
+st.set_page_config(page_title="Moodify", layout="wide")
 
-# 🖼️ App UI
-st.set_page_config(page_title="Moodify", layout="wide", page_icon="favicon.ico")
-st.title("🎵 Moodify: Your Spotify Mood Tracker and Browser")
-
-# 🔓 Logout logic
+# Clear session on logout
 if st.session_state.get("token_exchanged", False):
     st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
     if st.button("🔓 Logout"):
         st.session_state.clear()
         st.rerun()
 
-# 🔐 Login logic
-elif st.button("🔐 Login with Spotify"):
-    scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
-    auth_url = sb.get_auth_url(scopes)
-
-    # Redirect logic
-    if st.get_option("server.headless"):
-        st.markdown(f"Please visit the following URL to authorize: [{auth_url}]({auth_url})")
-        st.info("After authorizing, return and refresh the page.")
-    else:
-        st.markdown(f"[Click here to log in with Spotify]({auth_url})")
-        st.info("A new tab has opened. Authorize, then come back and refresh.")
-
-# 🔄 Handle redirect from Spotify
+# Handle redirect from Spotify
 auth_code = st.query_params.get("code")
-
 if auth_code and not st.session_state.get("token_exchanged"):
     token_info = sb.exchange_code_for_token(auth_code)
     if token_info:
@@ -53,7 +32,15 @@ if auth_code and not st.session_state.get("token_exchanged"):
         st.session_state["user_profile"] = sb.get_current_user()
         st.rerun()
     else:
-        st.error("❌ Token exchange failed. Please try again.")
+        st.error("❌ Token exchange failed.")
+
+# Login button: redirect to Spotify
+if not st.session_state.get("token_exchanged", False):
+    if st.button("🔐 Login with Spotify"):
+        scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
+        auth_url = sb.get_auth_url(scopes)
+        # Redirect the user to Spotify login
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
         "🏠 Home",
