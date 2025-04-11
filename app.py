@@ -36,6 +36,10 @@ if "token_exchanged" not in st.session_state or not st.session_state["token_exch
         if "user_profile" in st.session_state:
             del st.session_state["user_profile"]
 
+        if "user_profile_displayed" in st.session_state:
+            del st.session_state["user_profile_displayed"]
+
+        # Redirect the user to the Spotify authentication page
         if st.get_option("server.headless"):  # Streamlit Cloud (can't open browser tabs)
             st.markdown(f"Please visit the following URL to authorize the app: [{auth_url}]({auth_url})")
             st.info("After authorizing, return here and refresh the page. ♺")
@@ -76,7 +80,19 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
             st.session_state["user_profile_displayed"] = True
             st.write(f"🎧 Logged in as: {user_profile['display_name']}")
 
-    # Add other app features here...
+    # Logout button logic
+    if st.button("🔓 Logout"):
+        # Clear session state to log the user out
+        if "user_profile" in st.session_state:
+            del st.session_state["user_profile"]
+        if "token_exchanged" in st.session_state:
+            del st.session_state["token_exchanged"]
+        if "user_profile_displayed" in st.session_state:
+            del st.session_state["user_profile_displayed"]
+
+        # Display message after logout
+        st.success("You have been logged out. Please log in again.")
+        st.rerun()  # This will refresh the app and reset the state
 
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
