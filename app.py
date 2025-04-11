@@ -5,7 +5,6 @@ import pandas as pd
 import requests
 import toml
 from main import SpotifyBackend
-import threading
 from geopy.geocoders import Nominatim
 
 print("✅ App is starting up")
@@ -61,6 +60,7 @@ if auth_code and "token_exchanged" not in st.session_state:
         user_profile = sb.get_current_user()
         if user_profile:
             st.session_state["user_profile"] = user_profile
+            # Only display user profile once after successful login
             st.write(f"🎧 Logged in as: {user_profile['display_name']}")
     else:
         st.error("❌ Failed to exchange code for token. Please try again.")
@@ -69,10 +69,15 @@ if auth_code and "token_exchanged" not in st.session_state:
 if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]:
     print("User is logged in. Displaying tabs...")
 
-    # Display user profile if available
+    # Display user profile if available, only once
     if "user_profile" in st.session_state:
         user_profile = st.session_state["user_profile"]
-        st.write(f"🎧 Logged in as: {user_profile['display_name']}")
+        if "user_profile_displayed" not in st.session_state:  # Prevent double display
+            st.session_state["user_profile_displayed"] = True
+            st.write(f"🎧 Logged in as: {user_profile['display_name']}")
+
+    # Add other app features here...
+
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
         "🏠 Home",
