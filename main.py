@@ -58,24 +58,19 @@ class SpotifyBackend:
     def request_token(self):
         """Force the user to log in again if the token is missing or expired."""
         auth_url = self.oauth.get_authorize_url()
-        print(f"Please log in using this URL: {auth_url}")  # This will need to be visited by the user
+        print(f"Please log in using this URL: {auth_url}")
         return auth_url
 
     def get_auth_url(self, scopes):
         """Generate Spotify authorization URL with the given scopes."""
-        scopes += " user-top-read"
         self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri, scope=scopes)
         return self.oauth.get_authorize_url()
 
     def exchange_code_for_token(self, code):
         """Exchange the authorization code for an access token."""
         self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri)
-        token_info = self.oauth.get_access_token(code)
-
-        if token_info:
-            self.sp = spotipy.Spotify(auth=token_info["access_token"])
-            return token_info
-        return None
+        token_info = self.oauth.get_access_token(code, as_dict=True)
+        return token_info if token_info and token_info.get("access_token") else None
 
     def get_current_user(self):
         """Get the current user's Spotify profile."""

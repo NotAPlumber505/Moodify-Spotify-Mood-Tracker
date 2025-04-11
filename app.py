@@ -33,13 +33,13 @@ if auth_code and not st.session_state.get("token_exchanged"):
         st.rerun()
     else:
         st.error("❌ Token exchange failed.")
+        st.write("Debug: Could not exchange code for token.")
 
 # Login button: redirect to Spotify
 if not st.session_state.get("token_exchanged", False):
     if st.button("🔐 Login with Spotify"):
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes)
-        # Redirect the user to Spotify login
         st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
@@ -86,7 +86,6 @@ if not st.session_state.get("token_exchanged", False):
         # Update for the background image in col2
         with col2:
             st.image("assets/music_background.jpg", width=600)
-
 
     # Mood Playlist Tab
     with mood_playlist_tab:
