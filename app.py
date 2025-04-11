@@ -5,6 +5,7 @@ import pandas as pd
 import requests
 import toml
 from main import SpotifyBackend
+import threading
 from geopy.geocoders import Nominatim
 
 print("✅ App is starting up")
@@ -32,6 +33,10 @@ if "token_exchanged" not in st.session_state or not st.session_state["token_exch
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes)
 
+        # Clear any existing session state for new user login
+        if "user_profile" in st.session_state:
+            del st.session_state["user_profile"]
+
         if st.get_option("server.headless"):  # Streamlit Cloud (can't open browser tabs)
             st.markdown(f"Please visit the following URL to authorize the app: [{auth_url}]({auth_url})")
             st.info("After authorizing, return here and refresh the page. ♺")
@@ -51,6 +56,12 @@ if auth_code and "token_exchanged" not in st.session_state:
     if token_info:
         st.session_state["token_exchanged"] = True
         st.success("✅ Authorized with Spotify! Now you can track your mood and songs.")
+
+        # Fetch the user profile after successful login and store it in session state
+        user_profile = sb.get_current_user()
+        if user_profile:
+            st.session_state["user_profile"] = user_profile
+            st.write(f"🎧 Logged in as: {user_profile['display_name']}")
     else:
         st.error("❌ Failed to exchange code for token. Please try again.")
 
@@ -58,14 +69,10 @@ if auth_code and "token_exchanged" not in st.session_state:
 if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]:
     print("User is logged in. Displaying tabs...")
 
-    # Hide the login button once the user is logged in
-    st.session_state["token_exchanged"] = True
-
-    # Fetch and display the current user’s name
-    user_profile = sb.get_current_user()
-    if user_profile:
+    # Display user profile if available
+    if "user_profile" in st.session_state:
+        user_profile = st.session_state["user_profile"]
         st.write(f"🎧 Logged in as: {user_profile['display_name']}")
-
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
         "🏠 Home",
