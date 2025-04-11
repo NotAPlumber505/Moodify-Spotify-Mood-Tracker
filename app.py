@@ -82,17 +82,14 @@ if "token_exchanged" in st.session_state and st.session_state["token_exchanged"]
 
     # Logout button logic
     if st.button("🔓 Logout"):
-        # Clear session state to log the user out
-        if "user_profile" in st.session_state:
-            del st.session_state["user_profile"]
-        if "token_exchanged" in st.session_state:
-            del st.session_state["token_exchanged"]
-        if "user_profile_displayed" in st.session_state:
-            del st.session_state["user_profile_displayed"]
+        # Clear all session state
+        st.session_state.clear()
 
         # Display message after logout
         st.success("You have been logged out. Please log in again.")
-        st.rerun()  # This will refresh the app and reset the state
+
+        # Refresh the app (force a rerun)
+        st.rerun()  # This refreshes the app and clears session state
 
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
