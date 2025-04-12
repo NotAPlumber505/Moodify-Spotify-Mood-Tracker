@@ -79,8 +79,16 @@ class SpotifyBackend:
 
     def exchange_code_for_token(self, code):
         """Exchange the authorization code for an access token."""
-        # self.oauth already initialized in __init__, just reuse:
+        # Use the already-initialized OAuth object with stored credentials
         token_info = self.oauth.get_access_token(code, as_dict=True)
+
+        if token_info and token_info.get("access_token"):
+            # Store authenticated Spotify client for reuse
+            self.sp = spotipy.Spotify(auth=token_info["access_token"])
+            return token_info
+        else:
+            print("Token exchange failed.")  # Optional debug log
+            return None
 
     def get_current_user(self):
         """Get the current user's Spotify profile."""
