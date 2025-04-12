@@ -125,7 +125,7 @@ class SpotifyBackend:
         """Fetch multiple random tracks based on mood-related genre."""
         if not self.ensure_token():  # Ensure the token is valid before making the request
             print("Error: No valid token.")
-            return None  # Return None if the token is invalid
+            return [], []  # Return None if the token is invalid
 
         # Mapping moods to multiple genre combinations based on experiment
         mood_to_genres = {
@@ -193,11 +193,12 @@ class SpotifyBackend:
                 return recommended_tracks, track_uris
             else:
                 print("No tracks found for the provided genres.")
-                return None, None
+                st.warning("No recommendations available for the selected mood.")
+                return [], []
 
         except Exception as e:
             print(f"Error while fetching tracks: {e}")
-            return None, None  # Return None in case of error
+            return [], []  # Return None in case of error
 
     # Method to get recommendations from mood (valence and energy)
     def get_single_recommendation_by_mood(self, mood):
