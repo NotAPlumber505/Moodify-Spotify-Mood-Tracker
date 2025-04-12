@@ -7,6 +7,8 @@ import toml
 from main import SpotifyBackend
 from geopy.geocoders import Nominatim
 
+st.set_page_config(page_title="Moodify", layout="wide")
+
 if not st.session_state.get("token_exchanged"):
     st.info("Please log in to Spotify to start using Moodify 🎧")
 
@@ -17,7 +19,7 @@ else:
     redirect_uri = "http://localhost:8080/callback"
 
 sb = SpotifyBackend(redirect_uri=redirect_uri)
-st.set_page_config(page_title="Moodify", layout="wide")
+
 
 # Try to auto-login if token is still valid and session is not set
 if not st.session_state.get("token_exchanged") and sb.ensure_token():
