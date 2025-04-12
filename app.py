@@ -25,14 +25,6 @@ if not st.session_state.get("token_exchanged") and sb.ensure_token():
     st.session_state["token_exchanged"] = True
     st.session_state["user_profile"] = sb.get_current_user()
 
-# Clear session on logout
-if st.session_state.get("token_exchanged", False):
-    st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
-    if st.button("🔓 Logout"):
-        st.toast("You have successfully logged out.")
-        st.session_state.clear()
-        st.rerun()
-
 # Handle redirect from Spotify
 auth_code = st.query_params.get("code")
 if auth_code and not st.session_state.get("token_exchanged"):
