@@ -22,19 +22,20 @@ sb = SpotifyBackend(redirect_uri=redirect_uri)
 
 # Try to auto-login if token is still valid and session is not set
 if not st.session_state.get("token_exchanged") and sb.ensure_token():
-    user_profile = sb.get_current_user()
-    if user_profile:
-        st.session_state["token_exchanged"] = True
-        st.session_state["user_profile"] = user_profile
-    else:
-        st.error("❌ Could not get user profile. Please log in again.")
-        st.stop()
+    st.session_state["token_exchanged"] = True
+    st.session_state["user_profile"] = sb.get_current_user()
 
 # Handle redirect from Spotify
 auth_code = st.query_params.get("code")
 if auth_code and not st.session_state.get("token_exchanged"):
-    print("Auth code received:", auth_code)  # Add this
     token_info = sb.exchange_code_for_token(auth_code)
+    if token_info:
+        st.session_state["token_exchanged"] = True
+        st.session_state["user_profile"] = sb.get_current_user()
+
+        st.rerun()
+    else:
+        st.error("❌ Token exchange failed.")
 
 # Before login, show only the login button
 if not st.session_state.get("token_exchanged", False):
@@ -43,11 +44,7 @@ if not st.session_state.get("token_exchanged", False):
     if st.button("🔐 Login with Spotify"):
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes)
-        st.markdown(f"""
-            <a href="{auth_url}" target="_self">
-                <button style="font-size:16px;padding:8px 16px;">Login with Spotify</button>
-            </a>
-        """, unsafe_allow_html=True)
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
 
     st.stop()  # 🛑 This prevents anything below from running if not logged in
 
