@@ -93,7 +93,11 @@ class SpotifyBackend:
     def get_current_user(self):
         """Get the current user's Spotify profile."""
         if self.ensure_token():
-            return self.sp.current_user()
+            try:
+                return self.sp.current_user()
+            except Exception as e:
+                print(f"Failed to fetch user profile: {e}")
+                return None
         return None
 
     def get_token_info(self):

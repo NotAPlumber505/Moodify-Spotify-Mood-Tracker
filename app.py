@@ -22,20 +22,19 @@ sb = SpotifyBackend(redirect_uri=redirect_uri)
 
 # Try to auto-login if token is still valid and session is not set
 if not st.session_state.get("token_exchanged") and sb.ensure_token():
-    st.session_state["token_exchanged"] = True
-    st.session_state["user_profile"] = sb.get_current_user()
+    user_profile = sb.get_current_user()
+    if user_profile:
+        st.session_state["token_exchanged"] = True
+        st.session_state["user_profile"] = user_profile
+    else:
+        st.error("❌ Could not get user profile. Please log in again.")
+        st.stop()
 
 # Handle redirect from Spotify
 auth_code = st.query_params.get("code")
 if auth_code and not st.session_state.get("token_exchanged"):
+    print("Auth code received:", auth_code)  # Add this
     token_info = sb.exchange_code_for_token(auth_code)
-    if token_info:
-        st.session_state["token_exchanged"] = True
-        st.session_state["user_profile"] = sb.get_current_user()
-
-        st.rerun()
-    else:
-        st.error("❌ Token exchange failed.")
 
 # Before login, show only the login button
 if not st.session_state.get("token_exchanged", False):
