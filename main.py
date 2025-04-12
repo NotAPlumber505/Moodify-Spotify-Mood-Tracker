@@ -96,6 +96,10 @@ class SpotifyBackend:
             return self.sp.current_user()
         return None
 
+    def get_token_info(self):
+        """Return the current token information from the cache, if available."""
+        return self.oauth.get_cached_token()
+
     def create_playlist(self, user_id, name, description="Mood-based playlist"):
         """Create a new playlist for the user."""
         try:

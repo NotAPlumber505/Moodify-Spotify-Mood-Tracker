@@ -32,10 +32,10 @@ if auth_code and not st.session_state.get("token_exchanged"):
     if token_info:
         st.session_state["token_exchanged"] = True
         st.session_state["user_profile"] = sb.get_current_user()
+
         st.rerun()
     else:
         st.error("❌ Token exchange failed.")
-
 
 # Before login, show only the login button
 if not st.session_state.get("token_exchanged", False):
@@ -48,6 +48,17 @@ if not st.session_state.get("token_exchanged", False):
     st.stop()  # 🛑 This prevents anything below from running if not logged in
 
 # --- USER IS LOGGED IN BEYOND THIS POINT ---
+
+# for debugging purposes
+user = st.session_state.get("user_profile", {})
+if user:
+    st.sidebar.markdown(f"**Logged in as:** {user.get('display_name', 'Unknown')} (`{user.get('id')}`)")
+
+if st.session_state.get("token_exchanged"):
+    token_info = sb.get_token_info()
+    if token_info:
+        st.sidebar.write("Access Token Expires At:", token_info['expires_at'])
+        st.sidebar.code(token_info['access_token'])
 
 # Show welcome and logout
 st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
