@@ -24,15 +24,25 @@ class SpotifyBackend:
         self.client_id = secrets["SPOTIFY"]["CLIENT_ID"]
         self.client_secret = secrets["SPOTIFY"]["CLIENT_SECRET"]
 
-        # If a redirect_uri is passed, use it; otherwise, use the default one from secrets
+        # Use provided redirect_uri or fall back to secrets
         self.redirect_uri = redirect_uri or secrets["SPOTIFY"]["REDIRECT_URI"]
-        self.oauth = None  # Ensure OAuth is initialized
+
+        # Add a standard cache path for token storage (good for both local and cloud)
+        self.cache_path = ".spotify_cache.json"
+
+        # Prepare OAuth object using the cache path (this will be reused in other methods)
+        self.oauth = SpotifyOAuth(
+            self.client_id,
+            self.client_secret,
+            self.redirect_uri,
+            cache_path=self.cache_path
+        )
+
 
     def ensure_token(self):
         """Ensure that a valid access token is available."""
         if not self.sp:
-            if not self.oauth:
-                self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri)
+            # Already set in __init__, so you can skip re-instantiating
             token_info = self.oauth.get_cached_token()
 
             if token_info:
@@ -63,14 +73,14 @@ class SpotifyBackend:
 
     def get_auth_url(self, scopes):
         """Generate Spotify authorization URL with the given scopes."""
-        self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri, scope=scopes)
+        # Reuse existing self.oauth, update scope
+        self.oauth.scope = scopes
         return self.oauth.get_authorize_url()
 
     def exchange_code_for_token(self, code):
         """Exchange the authorization code for an access token."""
-        self.oauth = SpotifyOAuth(self.client_id, self.client_secret, self.redirect_uri)
+        # self.oauth already initialized in __init__, just reuse:
         token_info = self.oauth.get_access_token(code, as_dict=True)
-        return token_info if token_info and token_info.get("access_token") else None
 
     def get_current_user(self):
         """Get the current user's Spotify profile."""

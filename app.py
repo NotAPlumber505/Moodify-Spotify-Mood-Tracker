@@ -7,6 +7,9 @@ import toml
 from main import SpotifyBackend
 from geopy.geocoders import Nominatim
 
+if not st.session_state.get("token_exchanged"):
+    st.info("Please log in to Spotify to start using Moodify 🎧")
+
 # Setup redirect URI
 if st.get_option("server.headless"):
     redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
@@ -16,10 +19,16 @@ else:
 sb = SpotifyBackend(redirect_uri=redirect_uri)
 st.set_page_config(page_title="Moodify", layout="wide")
 
+# Try to auto-login if token is still valid and session is not set
+if not st.session_state.get("token_exchanged") and sb.ensure_token():
+    st.session_state["token_exchanged"] = True
+    st.session_state["user_profile"] = sb.get_current_user()
+
 # Clear session on logout
 if st.session_state.get("token_exchanged", False):
     st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
     if st.button("🔓 Logout"):
+        st.toast("You have successfully logged out.")
         st.session_state.clear()
         st.rerun()
 
@@ -30,6 +39,7 @@ if auth_code and not st.session_state.get("token_exchanged"):
     if token_info:
         st.session_state["token_exchanged"] = True
         st.session_state["user_profile"] = sb.get_current_user()
+        st.info("✅ Login successful! You can close this tab and return to the app.")
         st.rerun()
     else:
         st.error("❌ Token exchange failed.")
@@ -40,6 +50,7 @@ if not st.session_state.get("token_exchanged", False):
     if st.button("🔐 Login with Spotify"):
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes)
+        st.info("Redirecting to Spotify for authentication...")
         st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
 
     home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
