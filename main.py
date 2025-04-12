@@ -292,7 +292,7 @@ class SpotifyBackend:
         result = self.sp.search(q=artist_name, type="artist", limit=5)  # Limit to top 5 matches
 
         if not result["artists"]["items"]:
-            return None, None  # No artist found
+            return [], []  # No artist found
 
         # Look through search results to find the best match
         best_match = None
@@ -303,7 +303,7 @@ class SpotifyBackend:
                 break
 
         if not best_match:
-            return None, None  # No exact match found
+            return [], []  # No exact match found
 
         # If a match is found, retrieve the artist's top tracks
         artist_id = best_match["id"]
