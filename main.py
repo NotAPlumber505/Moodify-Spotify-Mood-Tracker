@@ -1,4 +1,5 @@
 import random
+import time
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import pandas as pd
@@ -13,25 +14,6 @@ def load_secrets():
     else:
         return toml.load("secrets.toml")  # Use secrets.toml for local development
 
-SCOPE = "user-read-private"
-
-def get_spotify_oauth():
-    return SpotifyOAuth(
-        client_id=st.secrets["SPOTIPY_CLIENT_ID"],
-        client_secret=st.secrets["SPOTIPY_CLIENT_SECRET"],
-        redirect_uri=st.secrets["REDIRECT_URI"],
-        scope=SCOPE,
-        show_dialog=True
-    )
-
-
-def get_spotify_client(token_info):
-    if token_info:
-        oauth = get_spotify_oauth()
-        if oauth.is_token_expired(token_info):
-            token_info = oauth.refresh_access_token(token_info['refresh_token'])
-        return spotipy.Spotify(auth=token_info['access_token']), token_info
-    return None, None
 
 class SpotifyBackend:
     def __init__(self, redirect_uri=None):
@@ -45,19 +27,78 @@ class SpotifyBackend:
         # Use provided redirect_uri or fall back to secrets
         self.redirect_uri = redirect_uri or secrets["SPOTIFY"]["REDIRECT_URI"]
 
-        # Prepare OAuth object (no cache)
+        # Add a standard cache path for token storage (good for both local and cloud)
+        self.cache_path = ".spotify_cache.json"
+
+        # Prepare OAuth object using the cache path (this will be reused in other methods)
         self.oauth = SpotifyOAuth(
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            redirect_uri=self.redirect_uri,
-            scope=[
-                "user-top-read",
-                "user-read-recently-played",
-                "playlist-modify-public",
-                "playlist-modify-private",
-            ],
-            show_dialog=True  # Ensures auth popup appears every time
+            self.client_id,
+            self.client_secret,
+            self.redirect_uri,
+            cache_path=self.cache_path
         )
+
+
+    def ensure_token(self):
+        """Ensure that a valid access token is available."""
+        if not self.sp:
+            # Already set in __init__, so you can skip re-instantiating
+            token_info = self.oauth.get_cached_token()
+
+            if token_info:
+                # Check if token has expired
+                if token_info['expires_at'] - int(time.time()) <= 0:
+                    print("Token expired, refreshing...")
+                    token_info = self.oauth.refresh_access_token(token_info["refresh_token"])
+                    self.sp = spotipy.Spotify(auth=token_info["access_token"])
+                    print("Token refreshed.")  # Debugging log
+                else:
+                    self.sp = spotipy.Spotify(auth=token_info["access_token"])
+                    print("Token is valid.")  # Debugging log
+            else:
+                print("No cached token found. Please log in again.")
+                return False  # Return False if no token is available
+
+        if self.sp:  # If self.sp is initialized, token should be valid
+            return True
+        else:
+            print("Error: Token is invalid or missing.")
+            return False
+
+    def request_token(self):
+        """Force the user to log in again if the token is missing or expired."""
+        auth_url = self.oauth.get_authorize_url()
+        print(f"Please log in using this URL: {auth_url}")
+        return auth_url
+
+    def get_auth_url(self, scopes):
+        """Generate Spotify authorization URL with the given scopes."""
+        # Reuse existing self.oauth, update scope
+        self.oauth.scope = scopes
+        return self.oauth.get_authorize_url()
+
+    def exchange_code_for_token(self, code):
+        """Exchange the authorization code for an access token."""
+        # Use the already-initialized OAuth object with stored credentials
+        token_info = self.oauth.get_access_token(code, as_dict=True)
+
+        if token_info and token_info.get("access_token"):
+            # Store authenticated Spotify client for reuse
+            self.sp = spotipy.Spotify(auth=token_info["access_token"])
+            return token_info
+        else:
+            print("Token exchange failed.")  # Optional debug log
+            return None
+
+    def get_current_user(self):
+        """Get the current user's Spotify profile."""
+        if self.ensure_token():
+            return self.sp.current_user()
+        return None
+
+    def get_token_info(self):
+        """Return the current token information from the cache, if available."""
+        return self.oauth.get_cached_token()
 
     def create_playlist(self, user_id, name, description="Mood-based playlist"):
         """Create a new playlist for the user."""
@@ -86,6 +127,10 @@ class SpotifyBackend:
 
     def get_random_tracks_by_genre(self, mood, num_tracks=5):
         """Fetch multiple random tracks based on mood-related genre."""
+        if not self.ensure_token():  # Ensure the token is valid before making the request
+            print("Error: No valid token.")
+            return [], []  # Return None if the token is invalid
+
         # Mapping moods to multiple genre combinations based on experiment
         mood_to_genres = {
             range(0, 2): ["ambient", "sad", "piano", "emo", "blues", "classical", "folk", "acoustic", "rainy-day"],
@@ -162,6 +207,10 @@ class SpotifyBackend:
     # Method to get recommendations from mood (valence and energy)
     def get_single_recommendation_by_mood(self, mood):
         """Fetch a single recommendation based on mood."""
+        if not self.ensure_token():  # Ensure the token is valid before making the request
+            print("Error: No valid token.")
+            return None  # Return None if the token is invalid
+
         # Mapping moods to genres
         mood_to_genres = {
             range(0, 2): ["ambient", "sad", "piano", "emo"],
@@ -211,6 +260,8 @@ class SpotifyBackend:
             return None  # Return None in case of error
 
     def get_top_tracks_by_timeframe(self, interval):
+        self.ensure_token()
+
         valid_intervals = ["None", "short_term", "medium_term", "long_term"]
 
         if interval not in valid_intervals:
@@ -236,6 +287,8 @@ class SpotifyBackend:
             return None, f"An error occurred: {str(e)}"
 
     def search_artist_top_tracks(self, artist_name):
+        self.ensure_token()
+
         # Normalize the artist name to handle potential special characters or spaces
         artist_name_normalized = artist_name.strip().replace("/", "").replace(" ", "").lower()
 

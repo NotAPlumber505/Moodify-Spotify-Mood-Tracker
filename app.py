@@ -6,7 +6,6 @@ import requests
 import toml
 from main import SpotifyBackend
 from geopy.geocoders import Nominatim
-from main import get_spotify_oauth, get_spotify_client
 
 st.set_page_config(page_title="Moodify", layout="wide")
 
@@ -19,39 +18,48 @@ else:
 sb = SpotifyBackend(redirect_uri=redirect_uri)
 
 # -- Handle Authorization Code from Redirect --
-token_info = st.session_state.get("token_info", None)
-spotify, updated_token_info = get_spotify_client(token_info)
-
-if spotify:
-    user = spotify.me()
-    st.success(f"Logged in as: {user['display_name']} ({user['id']})")
-    st.write(user)
-
-    if st.button("🔓 Logout"):
-        st.session_state.clear()
+auth_code = st.query_params.get("code")
+if auth_code and not st.session_state.get("token_exchanged"):
+    token_info = sb.exchange_code_for_token(auth_code)
+    if token_info:
+        st.session_state["token_exchanged"] = True
+        st.session_state["user_profile"] = sb.get_current_user()
+        st.query_params.clear()
         st.rerun()
-else:
-    oauth = get_spotify_oauth()
+    else:
+        st.error("❌ Token exchange failed.")
 
+# -- LOGOUT Button: Show Auth Page Again --
+if st.session_state.get("token_exchanged"):
+    if st.sidebar.button("🔓 Logout"):
+        st.session_state.clear()
+        logout_url = sb.get_auth_url(
+            scopes="user-read-private",  # you can keep this light
+        ) + "&show_dialog=true"
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={logout_url}">', unsafe_allow_html=True)
+        st.stop()
+
+# -- Login Flow --
+if not st.session_state.get("token_exchanged", False):
+    st.title("Moodify 🎧")
+    st.info("Please login to Spotify to continue.")
     if st.button("🔐 Login with Spotify"):
-        auth_url = oauth.get_authorize_url()
-        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to authorize Spotify</a>', unsafe_allow_html=True)
-        st.info("After authorizing, return to this page.")
-
-    code = st.query_params.get("code")
-    if code:
-        try:
-            token_info = oauth.get_access_token(code)
-            st.session_state["token_info"] = token_info
-            st.query_params.clear()
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error retrieving token: {e}")
+        scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
+        auth_url = sb.get_auth_url(scopes) + "&show_dialog=true"  # Force show dialog every time
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
+    st.stop()
 
 # --- USER IS LOGGED IN BEYOND THIS POINT ---
 user = st.session_state.get("user_profile", {})
 if user:
     st.sidebar.markdown(f"**Logged in as:** {user.get('display_name', 'Unknown')} (`{user.get('id')}`)")
+
+if st.session_state.get("token_exchanged"):
+    token_info = sb.get_token_info()
+    if token_info:
+        st.sidebar.write("Access Token Expires At:", token_info['expires_at'])
+        st.sidebar.code(token_info['access_token'])
+
 
 # Show welcome and logout
 st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
@@ -247,7 +255,7 @@ with top_songs_tab:
             top_tracks_sorted = top_tracks.sort_values(by="Popularity", ascending=False).reset_index(drop=True)
 
             # Add Track # column
-            top_tracks_sorted.insert(0, "Track No.", pd.Series(range(1, len(top_tracks_sorted) + 1)))
+            top_tracks_sorted.insert(0, "Track No.", range(1, len(top_tracks_sorted) + 1))
 
             # Prepare track data for CSV download (after sorting the top tracks)
             track_data = [{
