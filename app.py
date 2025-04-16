@@ -19,7 +19,7 @@ else:
 sb = SpotifyBackend(redirect_uri=redirect_uri)
 
 # Handle redirect with ?code=... in URL
-query_params = st.experimental_get_query_params()
+query_params = st.query_params()
 if "code" in query_params:
     code = query_params["code"][0]
     sb.exchange_code_for_token(code)
