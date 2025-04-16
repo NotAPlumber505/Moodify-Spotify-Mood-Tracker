@@ -1,104 +1,114 @@
 import random
 import time
+import requests
+import toml
+import pandas as pd
+import streamlit as st
+from urllib.parse import urlencode
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import pandas as pd
-import toml
-import streamlit as st
-
 
 def load_secrets():
-    """Load secrets from Streamlit secrets or a local toml file."""
-    if "st" in globals() and st.secrets:  # Check if running on Streamlit Cloud
+    if "st" in globals() and st.secrets:
         return st.secrets
     else:
-        return toml.load("secrets.toml")  # Use secrets.toml for local development
+        return toml.load("secrets.toml")
 
 
 class SpotifyBackend:
     def __init__(self, redirect_uri=None):
-        # Load secrets from Streamlit secrets or local file
         secrets = load_secrets()
-
         self.sp = None
         self.client_id = secrets["SPOTIFY"]["CLIENT_ID"]
         self.client_secret = secrets["SPOTIFY"]["CLIENT_SECRET"]
-
-        # Use provided redirect_uri or fall back to secrets
         self.redirect_uri = redirect_uri or secrets["SPOTIFY"]["REDIRECT_URI"]
-
-        # Add a standard cache path for token storage (good for both local and cloud)
-        self.cache_path = ".spotify_cache.json"
-
-        # Prepare OAuth object using the cache path (this will be reused in other methods)
-        self.oauth = SpotifyOAuth(
-            self.client_id,
-            self.client_secret,
-            self.redirect_uri,
-            # cache_path=self.cache_path
-        )
-
-
-    def ensure_token(self):
-        """Ensure that a valid access token is available."""
-        if not self.sp:
-            # Already set in __init__, so you can skip re-instantiating
-            token_info = self.oauth.get_cached_token()
-
-            if token_info:
-                # Check if token has expired
-                if token_info['expires_at'] - int(time.time()) <= 0:
-                    print("Token expired, refreshing...")
-                    token_info = self.oauth.refresh_access_token(token_info["refresh_token"])
-                    self.sp = spotipy.Spotify(auth=token_info["access_token"])
-                    print("Token refreshed.")  # Debugging log
-                else:
-                    self.sp = spotipy.Spotify(auth=token_info["access_token"])
-                    print("Token is valid.")  # Debugging log
-            else:
-                print("No cached token found. Please log in again.")
-                return False  # Return False if no token is available
-
-        if self.sp:  # If self.sp is initialized, token should be valid
-            return True
-        else:
-            print("Error: Token is invalid or missing.")
-            return False
-
-    def request_token(self):
-        """Force the user to log in again if the token is missing or expired."""
-        auth_url = self.oauth.get_authorize_url()
-        print(f"Please log in using this URL: {auth_url}")
-        return auth_url
+        self.auth_base = "https://accounts.spotify.com"
 
     def get_auth_url(self, scopes):
-        """Generate Spotify authorization URL with the given scopes."""
-        # Reuse existing self.oauth, update scope
-        self.oauth.scope = scopes
-        return self.oauth.get_authorize_url()
+        params = {
+            "client_id": self.client_id,
+            "response_type": "code",
+            "redirect_uri": self.redirect_uri,
+            "scope": scopes,
+            "show_dialog": "true",  # Shows "Not you?" screen
+        }
+        return f"{self.auth_base}/authorize?" + urlencode(params)
 
     def exchange_code_for_token(self, code):
-        """Exchange the authorization code for an access token."""
-        # Use the already-initialized OAuth object with stored credentials
-        token_info = self.oauth.get_access_token(code, as_dict=True)
+        payload = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": self.redirect_uri,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = requests.post(f"{self.auth_base}/api/token", data=payload, headers=headers)
+        if response.status_code == 200:
+            token_info = response.json()
+            st.session_state["access_token"] = token_info["access_token"]
+            st.session_state["refresh_token"] = token_info.get("refresh_token")
+            st.session_state["expires_at"] = int(time.time()) + token_info["expires_in"]
 
-        if token_info and token_info.get("access_token"):
-            # Store authenticated Spotify client for reuse
+            # ✅ Initialize spotipy client
             self.sp = spotipy.Spotify(auth=token_info["access_token"])
+
             return token_info
         else:
-            print("Token exchange failed.")  # Optional debug log
+            st.error("Token exchange failed.")
             return None
 
+    def refresh_token(self):
+        refresh_token = st.session_state.get("refresh_token")
+        if not refresh_token:
+            return None
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret
+        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = requests.post(f"{self.auth_base}/api/token", data=payload, headers=headers)
+        if response.status_code == 200:
+            token_info = response.json()
+            st.session_state["access_token"] = token_info["access_token"]
+            st.session_state["expires_at"] = int(time.time()) + token_info["expires_in"]
+
+            # ✅ Re-initialize spotipy client
+            self.sp = spotipy.Spotify(auth=token_info["access_token"])
+
+            return token_info
+        else:
+            return None
+
+    def get_valid_token(self):
+        if "access_token" not in st.session_state:
+            return None
+        if int(time.time()) > st.session_state.get("expires_at", 0):
+            return self.refresh_token()
+        return {"access_token": st.session_state["access_token"]}
+
     def get_current_user(self):
-        """Get the current user's Spotify profile."""
-        if self.ensure_token():
-            return self.sp.current_user()
+        token_info = self.get_valid_token()
+        if not token_info:
+            return None
+        headers = {
+            "Authorization": f"Bearer {token_info['access_token']}"
+        }
+        response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+        if response.status_code == 200:
+            return response.json()
         return None
 
-    def get_token_info(self):
-        """Return the current token information from the cache, if available."""
-        return self.oauth.get_cached_token()
+    def ensure_token(self):
+        token_info = self.get_valid_token()
+        if token_info and (self.sp is None):
+            self.sp = spotipy.Spotify(auth=token_info["access_token"])
+            return True
+        elif token_info:
+            return True
+        return False
 
     def create_playlist(self, user_id, name, description="Mood-based playlist"):
         """Create a new playlist for the user."""
