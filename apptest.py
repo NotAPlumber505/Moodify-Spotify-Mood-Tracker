@@ -6,9 +6,9 @@ from main import SpotifyBackend  # assumes your backend is in a separate module
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Moodify", layout="wide")
 
-client_id = st.secrets["SPOTIPY_CLIENT_ID"]
-client_secret = st.secrets["SPOTIPY_CLIENT_SECRET"]
-redirect_uri = st.secrets.get("SPOTIPY_REDIRECT_URI", "https://moodify-spotify-mood-tracker.streamlit.app/callback")
+client_id = st.secrets["SPOTIFY"]["CLIENT_ID"]
+client_secret = st.secrets["SPOTIFY"]["CLIENT_SECRET"]
+redirect_uri = st.secrets["SPOTIFY"]["REDIRECT_URI"]
 scope = "user-library-read user-read-private user-top-read playlist-modify-public playlist-modify-private"
 
 # --- AUTH ---
