@@ -34,7 +34,7 @@ if st.session_state.get("token_exchanged"):
     if st.sidebar.button("🔓 Logout", key="sidebar_logout_button"):
         st.session_state.clear()
         logout_url = sb.get_auth_url(
-            scopes="user-read-private"
+            scopes="user-read-private",  # you can keep this light
         ) + "&show_dialog=true"
         st.markdown(f'<meta http-equiv="refresh" content="0;url={logout_url}">', unsafe_allow_html=True)
         st.stop()
@@ -46,7 +46,7 @@ if not st.session_state.get("token_exchanged", False):
     if st.button("🔐 Login with Spotify"):
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes) + "&show_dialog=true"  # Force show dialog every time
-        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
+        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to authorize Spotify</a>', unsafe_allow_html=True)
     st.stop()
 
 # --- USER IS LOGGED IN BEYOND THIS POINT ---
@@ -60,17 +60,13 @@ if st.session_state.get("token_exchanged"):
         st.sidebar.write("Access Token Expires At:", token_info['expires_at'])
         st.sidebar.code(token_info['access_token'])
 
+
 # Show welcome and logout
 st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
 if st.button("🔓 Logout", key="main_logout_button"):
     st.toast("You have successfully logged out.")
     st.session_state.clear()
-    logout_url = sb.get_auth_url(
-        scopes="user-read-private"
-    ) + "&show_dialog=true"
-    st.markdown(f'<meta http-equiv="refresh" content="0;url={logout_url}">', unsafe_allow_html=True)
-    st.stop()
-
+    st.rerun()
 
 home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
     "🏠 Home",
