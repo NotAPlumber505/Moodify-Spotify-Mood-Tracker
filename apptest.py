@@ -8,7 +8,7 @@ st.set_page_config(page_title="Moodify", layout="wide")
 
 client_id = st.secrets["SPOTIPY_CLIENT_ID"]
 client_secret = st.secrets["SPOTIPY_CLIENT_SECRET"]
-redirect_uri = st.secrets.get("SPOTIPY_REDIRECT_URI", "http://localhost:8501/callback")
+redirect_uri = st.secrets.get("SPOTIPY_REDIRECT_URI", "https://moodify-spotify-mood-tracker.streamlit.app/callback")
 scope = "user-library-read user-read-private user-top-read playlist-modify-public playlist-modify-private"
 
 # --- AUTH ---
