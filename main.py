@@ -25,23 +25,22 @@ class SpotifyBackend:
         # Use provided redirect_uri or fall back to secrets
         self.redirect_uri = redirect_uri or secrets["SPOTIFY"]["REDIRECT_URI"]
 
-        # Prepare OAuth object using the redirect URI (no caching)
+        # Prepare OAuth object using the redirect URI and forcing dialog every time
         self.oauth = SpotifyOAuth(
             self.client_id,
             self.client_secret,
             self.redirect_uri,
-            scope="user-read-private",
-            show_dialog=True  # Forces the login dialog every time
+            show_dialog=True  # This forces the dialog every time
         )
 
     def get_auth_url(self, scopes):
         """Generate Spotify authorization URL with the given scopes."""
+        # Reuse existing self.oauth, update scope
         self.oauth.scope = scopes
         return self.oauth.get_authorize_url()
 
     def exchange_code_for_token(self, code):
         """Exchange the authorization code for an access token."""
-        # Use the already-initialized OAuth object with stored credentials
         token_info = self.oauth.get_access_token(code, as_dict=True)
 
         if token_info and token_info.get("access_token"):
@@ -54,15 +53,8 @@ class SpotifyBackend:
 
     def get_current_user(self):
         """Get the current user's Spotify profile."""
-        if self.sp:
+        if self.ensure_token():
             return self.sp.current_user()
-        return None
-
-    def get_token_info(self):
-        """Return the current token information from the cache, if available."""
-        # Here we don't use caching, just return current token info if available
-        if self.sp:
-            return self.sp.auth_manager.token_info
         return None
 
     def create_playlist(self, user_id, name, description="Mood-based playlist"):
