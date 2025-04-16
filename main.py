@@ -27,53 +27,17 @@ class SpotifyBackend:
         # Use provided redirect_uri or fall back to secrets
         self.redirect_uri = redirect_uri or secrets["SPOTIFY"]["REDIRECT_URI"]
 
-        # Add a standard cache path for token storage (good for both local and cloud)
-        self.cache_path = ".spotify_cache.json"
-
-        # Prepare OAuth object using the cache path (this will be reused in other methods)
+        # Prepare OAuth object using the redirect URI (no caching)
         self.oauth = SpotifyOAuth(
             self.client_id,
             self.client_secret,
             self.redirect_uri,
-            cache_path=self.cache_path
+            scope="user-read-private",
+            show_dialog=True  # Forces the login dialog every time
         )
-
-
-    def ensure_token(self):
-        """Ensure that a valid access token is available."""
-        if not self.sp:
-            # Already set in __init__, so you can skip re-instantiating
-            token_info = self.oauth.get_cached_token()
-
-            if token_info:
-                # Check if token has expired
-                if token_info['expires_at'] - int(time.time()) <= 0:
-                    print("Token expired, refreshing...")
-                    token_info = self.oauth.refresh_access_token(token_info["refresh_token"])
-                    self.sp = spotipy.Spotify(auth=token_info["access_token"])
-                    print("Token refreshed.")  # Debugging log
-                else:
-                    self.sp = spotipy.Spotify(auth=token_info["access_token"])
-                    print("Token is valid.")  # Debugging log
-            else:
-                print("No cached token found. Please log in again.")
-                return False  # Return False if no token is available
-
-        if self.sp:  # If self.sp is initialized, token should be valid
-            return True
-        else:
-            print("Error: Token is invalid or missing.")
-            return False
-
-    def request_token(self):
-        """Force the user to log in again if the token is missing or expired."""
-        auth_url = self.oauth.get_authorize_url()
-        print(f"Please log in using this URL: {auth_url}")
-        return auth_url
 
     def get_auth_url(self, scopes):
         """Generate Spotify authorization URL with the given scopes."""
-        # Reuse existing self.oauth, update scope
         self.oauth.scope = scopes
         return self.oauth.get_authorize_url()
 
@@ -92,13 +56,16 @@ class SpotifyBackend:
 
     def get_current_user(self):
         """Get the current user's Spotify profile."""
-        if self.ensure_token():
+        if self.sp:
             return self.sp.current_user()
         return None
 
     def get_token_info(self):
         """Return the current token information from the cache, if available."""
-        return self.oauth.get_cached_token()
+        # Here we don't use caching, just return current token info if available
+        if self.sp:
+            return self.sp.auth_manager.token_info
+        return None
 
     def create_playlist(self, user_id, name, description="Mood-based playlist"):
         """Create a new playlist for the user."""

@@ -60,6 +60,14 @@ if st.session_state.get("token_exchanged"):
         st.sidebar.write("Access Token Expires At:", token_info['expires_at'])
         st.sidebar.code(token_info['access_token'])
 
+# Show welcome and logout
+st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
+if st.button("🔓 Logout"):
+    st.toast("You have successfully logged out.")
+    st.session_state.clear()
+    st.rerun()
+
+
 
 # Show welcome and logout
 st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
