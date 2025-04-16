@@ -29,44 +29,54 @@ if auth_code and not st.session_state.get("token_exchanged"):
     else:
         st.error("❌ Token exchange failed.")
 
-# -- LOGOUT Button: Show Auth Page Again --
+# -- LOGOUT BUTTON HANDLER --
+def logout_user():
+    st.session_state.clear()
+    logout_url = sb.get_auth_url(scopes="user-read-private") + "&show_dialog=true"
+    st.session_state["logout_url"] = logout_url
+    st.rerun()
+
+# -- If logged in, show logout options --
 if st.session_state.get("token_exchanged"):
     if st.sidebar.button("🔓 Logout", key="sidebar_logout_button"):
-        st.session_state.clear()
-        logout_url = sb.get_auth_url(
-            scopes="user-read-private",  # you can keep this light
-        ) + "&show_dialog=true"
-        st.markdown(f'<meta http-equiv="refresh" content="0;url={logout_url}">', unsafe_allow_html=True)
-        st.stop()
+        logout_user()
 
-# -- Login Flow --
+# -- Manual Login Flow --
 if not st.session_state.get("token_exchanged", False):
     st.title("Moodify 🎧")
     st.info("Please login to Spotify to continue.")
-    if st.button("🔐 Login with Spotify"):
+    if "logout_url" in st.session_state:
+        st.link_button("🔐 Click here to log in again", st.session_state["logout_url"])
+        st.stop()
+    elif st.button("🔐 Login with Spotify"):
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
-        auth_url = sb.get_auth_url(scopes) + "&show_dialog=true"  # Force show dialog every time
+        auth_url = sb.get_auth_url(scopes) + "&show_dialog=true"
         st.markdown(f'<a href="{auth_url}" target="_blank">Click here to authorize Spotify</a>', unsafe_allow_html=True)
-    st.stop()
+        st.stop()
+    else:
+        st.stop()
 
-# --- USER IS LOGGED IN BEYOND THIS POINT ---
+# -- USER IS LOGGED IN BEYOND THIS POINT --
 user = st.session_state.get("user_profile", {})
 if user:
     st.sidebar.markdown(f"**Logged in as:** {user.get('display_name', 'Unknown')} (`{user.get('id')}`)")
 
+# Optional: show token info for debugging
 if st.session_state.get("token_exchanged"):
     token_info = sb.get_token_info()
     if token_info:
         st.sidebar.write("Access Token Expires At:", token_info['expires_at'])
         st.sidebar.code(token_info['access_token'])
 
-
-# Show welcome and logout
+# Show welcome and logout on main screen
 st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
 if st.button("🔓 Logout", key="main_logout_button"):
     st.toast("You have successfully logged out.")
-    st.session_state.clear()
-    st.rerun()
+    logout_user()
+
+# Your app’s main content would go here (e.g., tab navigation, charts, etc.)
+st.write("Welcome to Moodify! Navigate using the tabs.")
+
 
 home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
     "🏠 Home",
