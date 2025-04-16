@@ -67,15 +67,6 @@ if st.button("🔓 Logout"):
     st.session_state.clear()
     st.rerun()
 
-
-
-# Show welcome and logout
-st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
-if st.button("🔓 Logout"):
-    st.toast("You have successfully logged out.")
-    st.session_state.clear()
-    st.rerun()
-
 home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
     "🏠 Home",
     "🎧 Mood Playlist",

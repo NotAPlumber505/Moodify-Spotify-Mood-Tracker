@@ -6,14 +6,12 @@ import pandas as pd
 import toml
 import streamlit as st
 
-
 def load_secrets():
     """Load secrets from Streamlit secrets or a local toml file."""
     if "st" in globals() and st.secrets:  # Check if running on Streamlit Cloud
         return st.secrets
     else:
         return toml.load("secrets.toml")  # Use secrets.toml for local development
-
 
 class SpotifyBackend:
     def __init__(self, redirect_uri=None):
