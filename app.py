@@ -1,4 +1,5 @@
 import io
+import spotipy
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -8,58 +9,56 @@ from main import SpotifyBackend
 from geopy.geocoders import Nominatim
 
 st.set_page_config(page_title="Moodify", layout="wide")
+sb = SpotifyBackend()
 
-# Setup redirect URI
-if st.get_option("server.headless"):
-    redirect_uri = "https://moodify-spotify-mood-tracker.streamlit.app/callback"
-else:
-    redirect_uri = "http://localhost:8080/callback"
+def display_user_info(sp):
+    user = sp.me()
+    st.success(f"Logged in as: {user['display_name']} ({user['id']})")
+    st.write(user)
 
-sb = SpotifyBackend(redirect_uri=redirect_uri)
-
-# -- Handle Authorization Code from Redirect --
-auth_code = st.query_params.get("code")
-if auth_code and not st.session_state.get("token_exchanged"):
-    token_info = sb.exchange_code_for_token(auth_code)
-    if token_info:
-        st.session_state["token_exchanged"] = True
-        st.session_state["user_profile"] = sb.get_current_user()
-        st.query_params.clear()
-        st.rerun()
-    else:
-        st.error("❌ Token exchange failed.")
-
-# -- LOGOUT Button: Show Auth Page Again --
-if st.session_state.get("token_exchanged"):
-    if st.sidebar.button("🔓 Logout"):
+    if st.button("Logout"):
         st.session_state.clear()
-        logout_url = sb.get_auth_url(
-            scopes="user-read-private",  # you can keep this light
-        ) + "&show_dialog=true"
-        st.markdown(f'<meta http-equiv="refresh" content="0;url={logout_url}">', unsafe_allow_html=True)
-        st.stop()
+        st.rerun()
 
-# -- Login Flow --
-if not st.session_state.get("token_exchanged", False):
-    st.title("Moodify 🎧")
-    st.info("Please login to Spotify to continue.")
-    if st.button("🔐 Login with Spotify"):
-        scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
-        auth_url = sb.get_auth_url(scopes) + "&show_dialog=true"  # Force show dialog every time
-        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
-    st.stop()
+def get_spotify_client():
+    token_info = st.session_state.get("token_info")
+    if token_info:
+        sb = SpotifyBackend()
+        if sb.oauth.is_token_expired(token_info):
+            token_info = sb.oauth.refresh_access_token(token_info['refresh_token'])
+            st.session_state["token_info"] = token_info
+        return spotipy.Spotify(auth=token_info['access_token'])
+    return None
 
-# --- USER IS LOGGED IN BEYOND THIS POINT ---
-user = st.session_state.get("user_profile", {})
-if user:
-    st.sidebar.markdown(f"**Logged in as:** {user.get('display_name', 'Unknown')} (`{user.get('id')}`)")
+def main():
+    st.title("Spotify Login Example")
 
-# Show welcome and logout
-st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
-if st.button("🔓 Logout"):
-    st.toast("You have successfully logged out.")
-    st.session_state.clear()
-    st.rerun()
+    sb = SpotifyBackend()
+
+    sp = get_spotify_client()
+
+    if sp:
+        display_user_info(sp)
+    else:
+        # Show login link if user is not authenticated
+        code = st.query_params.get("code")
+        if st.button("Login with Spotify"):
+            auth_url = sb.get_auth_url()
+            st.markdown(f'<a href="{auth_url}" target="_blank">Click here to authorize Spotify</a>', unsafe_allow_html=True)
+            st.info("After authorizing, return to this page.")
+
+        if code:
+            try:
+                token_info = sb.exchange_code_for_token(code)
+                if token_info:
+                    st.session_state["token_info"] = token_info
+                    st.query_params.clear()  # Clear the code from the URL
+                    st.rerun()
+                else:
+                    st.error("Error: Could not retrieve token.")
+            except Exception as e:
+                st.error(f"Error retrieving token: {e}")
+
 
 home_tab, mood_playlist_tab, top_songs_tab, artist_search_tab, artist_info_tab = st.tabs([
     "🏠 Home",
