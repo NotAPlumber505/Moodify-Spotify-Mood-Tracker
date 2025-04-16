@@ -46,7 +46,7 @@ if not st.session_state.get("token_exchanged", False):
     if st.button("🔐 Login with Spotify"):
         scopes = "user-read-recently-played user-top-read playlist-modify-public playlist-modify-private"
         auth_url = sb.get_auth_url(scopes) + "&show_dialog=true"  # Force show dialog every time
-        st.markdown(f'<meta http-equiv="refresh" content="0;url={auth_url}">', unsafe_allow_html=True)
+        st.markdown(f'<a href="{auth_url}" target="_blank">Click here to authorize Spotify</a>', unsafe_allow_html=True)
     st.stop()
 
 # --- USER IS LOGGED IN BEYOND THIS POINT ---

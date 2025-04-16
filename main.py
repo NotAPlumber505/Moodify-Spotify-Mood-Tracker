@@ -35,7 +35,7 @@ class SpotifyBackend:
             self.client_id,
             self.client_secret,
             self.redirect_uri,
-            cache_path=self.cache_path
+            # cache_path=self.cache_path
         )
 
 
