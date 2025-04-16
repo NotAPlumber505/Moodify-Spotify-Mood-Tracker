@@ -31,7 +31,7 @@ if auth_code and not st.session_state.get("token_exchanged"):
 
 # -- LOGOUT Button: Show Auth Page Again --
 if st.session_state.get("token_exchanged"):
-    if st.sidebar.button("🔓 Logout"):
+    if st.sidebar.button("🔓 Logout", key="logout_button"):
         st.session_state.clear()
         logout_url = sb.get_auth_url(
             scopes="user-read-private",  # you can keep this light
