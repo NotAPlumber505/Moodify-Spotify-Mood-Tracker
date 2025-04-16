@@ -54,12 +54,6 @@ user = st.session_state.get("user_profile", {})
 if user:
     st.sidebar.markdown(f"**Logged in as:** {user.get('display_name', 'Unknown')} (`{user.get('id')}`)")
 
-if st.session_state.get("token_exchanged"):
-    token_info = sb.get_token_info()
-    if token_info:
-        st.sidebar.write("Access Token Expires At:", token_info['expires_at'])
-        st.sidebar.code(token_info['access_token'])
-
 # Show welcome and logout
 st.success(f"🎧 Logged in as: {st.session_state['user_profile']['display_name']}")
 if st.button("🔓 Logout"):
